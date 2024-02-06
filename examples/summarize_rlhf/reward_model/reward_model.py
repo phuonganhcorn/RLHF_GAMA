@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 
-base_model_id = "Phanh2532/GAML-151-500"
+
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,
     bnb_4bit_use_double_quant=True,
@@ -10,20 +10,17 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_compute_dtype=torch.bfloat16
 )
 
-model = AutoModelForCausalLM.from_pretrained(base_model_id, quantization_config=bnb_config)
-
-
 class RewardModel(nn.Module):
     def __init__(self, model_path):
         super().__init__()
-        model = model
+        model = AutoModelForCausalLM.from_pretrained(model_path, quantization_config=bnb_config)
         self.config = model.config
         # `gpt-neo(x)` models use `hidden_size` attribute names instead of `n_embd``
         self.config.n_embd = self.config.hidden_size if hasattr(self.config, "hidden_size") else self.config.n_embd
         self.transformer = model.transformer
         self.v_head = nn.Linear(self.config.n_embd, 1, bias=False)
         self.tokenizer =  AutoTokenizer.from_pretrained(
-                          base_model_id,
+                          model_path,
                           padding_side="left",
                           add_eos_token=True,
                           add_bos_token=True,
